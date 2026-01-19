@@ -1,0 +1,11 @@
+{
+    "emails": [
+        "test1@example.com",
+        "test2@example.com",
+        "test3@example.com"
+    ],
+    "subject": "Bulk Test Email",
+    "body": "This is a test email sent via the bulk scheduler.",
+    "scheduledAt": "2026-01-20T12:00:00.000Z",
+    "delayBetweenEmails": 5
+}
