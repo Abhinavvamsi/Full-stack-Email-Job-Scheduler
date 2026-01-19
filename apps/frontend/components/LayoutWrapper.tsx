@@ -4,18 +4,26 @@ import { useState, useEffect } from 'react';
 import { Sidebar } from './Sidebar';
 import { cn } from '@/lib/utils';
 import { Menu } from 'lucide-react';
+import { usePathname } from 'next/navigation';
 
 export default function LayoutWrapper({ children }: { children: React.ReactNode }) {
     const [isCollapsed, setIsCollapsed] = useState(false);
     const [isMobileOpen, setIsMobileOpen] = useState(false);
+    const pathname = usePathname();
     const [mounted, setMounted] = useState(false);
 
     useEffect(() => {
         setMounted(true);
     }, []);
 
-    // Prevent hydration mismatch for sidebar state if needed, though simple state is fine.
-    if (!mounted) return null;
+    // Hide Sidebar on Login Page
+    if (pathname === '/login') {
+        return (
+            <main className="min-h-screen bg-white">
+                {children}
+            </main>
+        )
+    }
 
     return (
         <div className="flex min-h-screen bg-white">
@@ -40,7 +48,8 @@ export default function LayoutWrapper({ children }: { children: React.ReactNode 
             <main
                 className={cn(
                     "flex-1 transition-all duration-300 ease-in-out pt-14 md:pt-0 min-h-screen",
-                    isCollapsed ? "md:ml-[64px]" : "md:ml-[240px]"
+                    // During SSR / Hydration, assume default expanded state logic or mounted check
+                    mounted && isCollapsed ? "md:ml-[64px]" : "md:ml-[240px]"
                 )}
             >
                 <div className="max-w-5xl mx-auto p-8 md:py-12">

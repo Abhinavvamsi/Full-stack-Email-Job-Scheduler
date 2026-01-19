@@ -1,7 +1,7 @@
 'use client';
 
 import Link from 'next/link';
-import { usePathname } from 'next/navigation';
+import { usePathname, useRouter } from 'next/navigation';
 import { cn } from '@/lib/utils';
 import {
     LayoutDashboard,
@@ -13,6 +13,8 @@ import {
     X
 } from 'lucide-react';
 import { motion } from 'framer-motion';
+import { createClient } from '@/utils/supabase/client';
+import { ModeToggle } from './ModeToggle';
 
 const sidebarItems = [
     { name: 'Dashboard', icon: LayoutDashboard, href: '/' },
@@ -29,6 +31,14 @@ interface SidebarProps {
 
 export function Sidebar({ isCollapsed, setIsCollapsed, isMobileOpen, setIsMobileOpen }: SidebarProps) {
     const pathname = usePathname();
+    const router = useRouter();
+    const supabase = createClient();
+
+    const handleLogout = async () => {
+        await supabase.auth.signOut();
+        router.refresh();
+        router.push('/login');
+    };
 
     return (
         <>
@@ -37,44 +47,29 @@ export function Sidebar({ isCollapsed, setIsCollapsed, isMobileOpen, setIsMobile
                 initial={false}
                 animate={{
                     width: isCollapsed ? 64 : 240,
-                    x: isMobileOpen ? 0 : -240, // We'll handle mobile visibility via classes mostly effectively
+                    x: isMobileOpen ? 0 : -240,
                 }}
                 // Override for desktop
                 style={{ x: 0 }}
                 className={cn(
-                    "fixed top-0 left-0 z-40 h-screen bg-[#F7F7F5] border-r border-[#ECECEC] flex flex-col transition-all duration-300 ease-in-out font-sans",
+                    "fixed top-0 left-0 z-40 h-screen bg-sidebar border-r border-border flex flex-col transition-all duration-300 ease-in-out font-sans",
                     // Mobile: hidden by default (via translate), shown if Open
                     // Desktop: always shown, width varies. 
-                    // We need to override the motion style 'x' on desktop? Motion handles it. 
-                    // Actually, motion 'x' prop will conflict with class 'translate'. 
-                    // Let's rely on motion for width, and classes for mobile visibility wrapper?
-                    // To be safe: Use motion for everything.
-                    // On desktop (md): x should be 0.
-                    "hidden md:flex", // Only use flex on desktop here? No, we want mobile generic.
-                    // Let's use a simpler approach: 
-                    // Mobile: fixed inset-y-0 left-0 z-40 transform transition-transform duration-300
+                    "hidden md:flex",
                 )}
-                // Let's re-do the motion logic to be cleaner for responsive
                 variants={{
                     mobileClosed: { x: "-100%", width: 240 },
                     mobileOpen: { x: 0, width: 240 },
                     desktopCollapsed: { x: 0, width: 64 },
                     desktopOpen: { x: 0, width: 240 }
                 }}
-            // We need to know if we are on mobile to select variant? 
-            // CSS md: is easier.
             >
                 {/* We will rely on the previous implementation but fixing the props. */}
             </motion.aside>
 
-            {/* 
-         Actually, let's write the CLEANEST implementation. 
-         Responsive sidebar is tricky with just one motion element.
-         We'll use a standard implementation:
-      */}
             <aside
                 className={cn(
-                    "fixed inset-y-0 left-0 z-40 bg-[#F7F7F5] border-r border-[#ECECEC] flex flex-col transition-all duration-300 ease-in-out",
+                    "fixed inset-y-0 left-0 z-40 bg-sidebar border-r border-border flex flex-col transition-all duration-300 ease-in-out",
                     // Mobile:
                     isMobileOpen ? "translate-x-0 w-64" : "-translate-x-full w-64",
                     // Desktop:
@@ -83,20 +78,20 @@ export function Sidebar({ isCollapsed, setIsCollapsed, isMobileOpen, setIsMobile
                 )}
             >
                 {/* Header / Collapse Toggle */}
-                <div className={cn("flex items-center h-14 border-b border-[#ECECEC] px-4", isCollapsed ? "justify-center" : "justify-between")}>
+                <div className={cn("flex items-center h-14 border-b border-border px-4", isCollapsed ? "justify-center" : "justify-between")}>
                     {(!isCollapsed || isMobileOpen) && (
                         <div className="flex items-center gap-2 overflow-hidden whitespace-nowrap">
-                            <div className="w-5 h-5 rounded bg-black flex items-center justify-center text-white text-xs font-bold">
+                            <div className="w-5 h-5 rounded bg-foreground flex items-center justify-center text-background text-xs font-bold">
                                 S
                             </div>
-                            <span className="font-medium text-[#37352f] text-sm">Scheduler </span>
+                            <span className="font-medium text-foreground text-sm">Scheduler </span>
                         </div>
                     )}
 
                     {/* Desktop Collapse */}
                     <button
                         onClick={() => setIsCollapsed(!isCollapsed)}
-                        className="hidden md:flex p-1 hover:bg-[#EAEaea] rounded-sm transition-colors text-gray-500"
+                        className="hidden md:flex p-1 hover:bg-muted/10 rounded-sm transition-colors text-muted-foreground"
                     >
                         {isCollapsed ? <ChevronRight size={14} /> : <ChevronLeft size={14} />}
                     </button>
@@ -104,7 +99,7 @@ export function Sidebar({ isCollapsed, setIsCollapsed, isMobileOpen, setIsMobile
                     {/* Mobile Close */}
                     <button
                         onClick={() => setIsMobileOpen(false)}
-                        className="md:hidden p-1 hover:bg-[#EAEaea] rounded-sm text-gray-500"
+                        className="md:hidden p-1 hover:bg-muted/10 rounded-sm text-muted-foreground"
                     >
                         <X size={18} />
                     </button>
@@ -121,13 +116,13 @@ export function Sidebar({ isCollapsed, setIsCollapsed, isMobileOpen, setIsMobile
                                 className={cn(
                                     "flex items-center gap-3 px-3 py-2 rounded-sm transition-colors text-sm group",
                                     isActive
-                                        ? "bg-[#EAEaea] text-[#37352f] font-medium"
-                                        : "text-gray-500 hover:bg-[#EAEaea] hover:text-[#37352f]"
+                                        ? "bg-muted/10 text-foreground font-medium"
+                                        : "text-muted-foreground hover:bg-muted/10 hover:text-foreground"
                                 )}
                                 title={isCollapsed ? item.name : undefined}
                                 onClick={() => setIsMobileOpen(false)} // Close on navigate (mobile)
                             >
-                                <item.icon className={cn("min-w-[18px] min-h-[18px]", isActive ? "text-[#37352f]" : "text-gray-400 group-hover:text-gray-600")} size={18} />
+                                <item.icon className={cn("min-w-[18px] min-h-[18px]", isActive ? "text-foreground" : "text-muted-foreground group-hover:text-foreground")} size={18} />
                                 {(!isCollapsed || isMobileOpen) && (
                                     <span className="whitespace-nowrap overflow-hidden">
                                         {item.name}
@@ -138,12 +133,20 @@ export function Sidebar({ isCollapsed, setIsCollapsed, isMobileOpen, setIsMobile
                     })}
                 </nav>
 
-                {/* User / Footer */}
-                <div className="p-2 border-t border-[#ECECEC]">
-                    <button className={cn(
-                        "flex items-center gap-3 px-3 py-2 w-full rounded-sm transition-colors text-sm text-gray-500 hover:bg-[#EAEaea] hover:text-[#37352f]",
-                        isCollapsed && "justify-center"
-                    )}>
+                {/* Footer Actions */}
+                <div className="p-2 border-t border-border space-y-1">
+                    {(!isCollapsed || isMobileOpen) && (
+                        <div className="px-3 py-2">
+                            <ModeToggle />
+                        </div>
+                    )}
+
+                    <button
+                        onClick={handleLogout}
+                        className={cn(
+                            "flex items-center gap-3 px-3 py-2 w-full rounded-sm transition-colors text-sm text-muted-foreground hover:bg-muted/10 hover:text-foreground",
+                            isCollapsed && "justify-center"
+                        )}>
                         <LogOut size={18} />
                         {(!isCollapsed || isMobileOpen) && <span>Logout</span>}
                     </button>
@@ -153,7 +156,7 @@ export function Sidebar({ isCollapsed, setIsCollapsed, isMobileOpen, setIsMobile
             {/* Mobile Overlay */}
             {isMobileOpen && (
                 <div
-                    className="fixed inset-0 bg-black/20 z-30 md:hidden"
+                    className="fixed inset-0 bg-black/50 z-30 md:hidden"
                     onClick={() => setIsMobileOpen(false)}
                 />
             )}
